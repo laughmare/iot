@@ -8,10 +8,13 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.TextView;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.Statement;
-import java.sql.ResultSet;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.SyncHttpClient;
+
+import java.io.UnsupportedEncodingException;
+
+import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -22,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mTextView=(TextView)findViewById(R.id.lbl);
+        mTextView=findViewById(R.id.lbl);
         handler.post(update);
     }
 
@@ -35,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("",ex.getMessage());
             }
             mTextView.setText(lblVal);
-            handler.postDelayed(this, 5000);
+            handler.postDelayed(this, 500);
         }
     };
 
@@ -49,26 +52,28 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void connect() {
-        String url = "jdbc:jtds:sqlserver://iot39536.database.windows.net:1433;databasename=IOT;user=laughmare@iot39536;password=..2707Ts;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;";
-        String driver = "net.sourceforge.jtds.jdbc.Driver";
-        // Declare the JDBC objects.
-        Connection con = null;
-        Statement stmt = null;
-        ResultSet rs = null;
-        try {
-            Class.forName(driver);
-            con = DriverManager.getConnection(url);
-            String SQL = "SELECT top(1) val FROM [dbo].[iot] order by id desc";
-            stmt = con.createStatement();
-            rs = stmt.executeQuery(SQL);
+        SyncHttpClient client = new SyncHttpClient();
 
+        client.get("https://api.thingspeak.com/channels/947424/fields/field1/last?api_key=AEYFL163IH57ZV06", null, new AsyncHttpResponseHandler() {
 
-            while (rs.next()) {
-                Log.d("",rs.getString("val"));
-                lblVal = rs.getString("val");
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                try {
+                    lblVal = new String(responseBody, "UTF-8");
+                    Log.d("",new String(responseBody, "UTF-8"));
+                } catch (UnsupportedEncodingException e) {
+                    Log.d("",e.getMessage());
+                }
             }
-        } catch (Exception ex) {
-            Log.d("",ex.getMessage());
-        }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                try {
+                    Log.d("",new String(responseBody, "UTF-8"));
+                } catch (UnsupportedEncodingException e) {
+                    Log.d("",e.getMessage());
+                }
+            }
+        });
     }
 }
