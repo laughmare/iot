@@ -3,40 +3,44 @@ package com.example.iot;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.SyncHttpClient;
-
-import java.io.UnsupportedEncodingException;
 
 import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends AppCompatActivity {
 
     String lblVal;
-    Handler handler=new Handler();
+    Handler handler=new Handler(Looper.getMainLooper());
     TextView mTextView;
+    ImageView img;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        img=findViewById(R.id.image);
+        img.setImageResource(R.drawable.celsius);
         mTextView=findViewById(R.id.lbl);
         handler.post(update);
     }
 
-    Runnable update=new Runnable(){
-        public void run() {Thread thrd = thr();
-            thrd.start();
-            try{
-                thrd.join();
-            } catch (Exception ex) {
-                Log.d("",ex.getMessage());
-            }
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+    }
+
+    Runnable update = new Runnable() {
+        @Override
+        public void run() {
+            connect();
             mTextView.setText(lblVal);
             handler.postDelayed(this, 500);
         }
@@ -52,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void connect() {
-        SyncHttpClient client = new SyncHttpClient();
+        AsyncHttpClient client = new AsyncHttpClient();
 
         client.get("https://api.thingspeak.com/channels/947424/fields/field1/last?api_key=AEYFL163IH57ZV06", null, new AsyncHttpResponseHandler() {
 
@@ -61,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     lblVal = new String(responseBody, "UTF-8");
                     Log.d("",new String(responseBody, "UTF-8"));
-                } catch (UnsupportedEncodingException e) {
+                } catch (Exception e) {
                     Log.d("",e.getMessage());
                 }
             }
@@ -70,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
             public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
                 try {
                     Log.d("",new String(responseBody, "UTF-8"));
-                } catch (UnsupportedEncodingException e) {
+                } catch (Exception e) {
                     Log.d("",e.getMessage());
                 }
             }
